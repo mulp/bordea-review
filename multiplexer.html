@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Bordea · Il multiplexer QK-A034-B a bordo</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .doc { max-width: 760px; padding: 28px 0 56px; }
+    .doc h1 { font-size: 26px; line-height: 1.25; margin: 0 0 12px; }
+    .doc h2 { font-size: 20px; margin: 36px 0 10px; }
+    .doc p, .doc li { max-width: 70ch; }
+    .doc ol, .doc ul { padding-left: 22px; }
+    .doc li { margin-bottom: 6px; }
+    .lead { color: var(--muted); }
+    .box { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; margin: 14px 0; }
+    .box.warn { border-color: #e9c3bf; background: #fdf4f3; }
+    .box.tip { border-color: #c9dcec; background: #eef5fb; }
+    .doc table { font-size: 15px; margin: 8px 0; }
+    .doc td, .doc th { white-space: normal; text-align: left; vertical-align: top; }
+    code { background: #eef2f5; padding: 1px 6px; border-radius: 4px; font-size: 15px; }
+    .src { font-size: 14px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <span class="brand">Bordea</span>
+      <span class="top-title">Il multiplexer a bordo</span>
+    </div>
+  </header>
+  <main class="wrap doc">
+    <h1>Il multiplexer QK-A034-B: cosa fa e come usarlo</h1>
+    <p class="lead">Una guida pratica, letta dal manuale italiano e da quello ufficiale Quark-elec. Le parti che dipendono da come è cablata la tua barca sono indicate: per quelle ci servono le foto.</p>
+
+    <h2>1. Cos'è, in due righe</h2>
+    <p>È un punto di raccolta dei dati di bordo. Riceve i dati dagli strumenti (vento, profondità, GPS, bussola, AIS…) da tre tipi di collegamento, li unisce e li rimanda a tutti gli altri, compresi tablet e telefoni via WiFi. Funziona nei due sensi: un'app sul tablet può anche <b>mandare</b> dati agli strumenti, per esempio il waypoint al pilota automatico.</p>
+    <table>
+      <thead><tr><th>Collegamento</th><th>Entra</th><th>Esce</th></tr></thead>
+      <tbody>
+        <tr><td>NMEA 2000 (dorsale con i connettori tondi)</td><td>sì</td><td>sì</td></tr>
+        <tr><td>NMEA 0183 (fili +/−)</td><td>3 ingressi</td><td>1 uscita</td></tr>
+        <tr><td>SeaTalk1 (vecchio bus Raymarine, 3 fili)</td><td>sì</td><td><b>no</b></td></tr>
+        <tr><td>WiFi (fino a 4 dispositivi)</td><td>sì</td><td>sì</td></tr>
+        <tr><td>USB (computer)</td><td>sì</td><td>sì</td></tr>
+      </tbody>
+    </table>
+    <p>Si alimenta dalla dorsale NMEA 2000: se la barca non ha una dorsale NMEA 2000 alimentata e terminata, il multiplexer non si accende.</p>
+
+    <h2>2. Primo controllo: le luci</h2>
+    <ul>
+      <li><b>PWR</b> rossa fissa: è acceso.</li>
+      <li><b>ST1, IN1, IN2, IN3</b> lampeggiano: arrivano dati da SeaTalk1 o dai tre ingressi NMEA 0183. Una luce ferma vuol dire che su quell'ingresso non arriva niente (o la velocità è sbagliata).</li>
+      <li><b>N2K</b> lampeggia: sta mandando dati sulla dorsale NMEA 2000.</li>
+      <li><b>WiFi</b> e <b>USB</b> lampeggiano: stanno uscendo dati verso tablet o computer.</li>
+      <li><b>Overflow</b> lampeggia: l'uscita NMEA 0183 riceve più dati di quanti riesca a mandare e ne perde (vedi il punto 6).</li>
+    </ul>
+    <p>Con gli strumenti accesi, una foto del pannello con le luci ci dice già cosa è collegato.</p>
+
+    <h2>3. Vedere gli strumenti sul tablet (SailGrib)</h2>
+    <ol>
+      <li>Accendi gli strumenti e il multiplexer.</li>
+      <li>Sul tablet apri le impostazioni WiFi e collegati alla rete <code>QK-A034-B xxxx</code> (xxxx cambia da apparecchio ad apparecchio). Password di fabbrica: <code>88888888</code>.</li>
+      <li>In SailGrib, nelle impostazioni di connessione NMEA, crea una connessione <b>TCP</b> con indirizzo <code>192.168.1.100</code> e porta <code>2000</code>.</li>
+      <li>Dovresti vedere posizione, rotta e velocità, e gli strumenti collegati: vento, profondità, prua, AIS se c'è.</li>
+    </ol>
+    <div class="box tip">
+      <b>Da sapere.</b> In questa modalità (ad-hoc, quella di fabbrica) il tablet è collegato al multiplexer e non a internet: per scaricare i GRIB serve staccarsi, o usare la modalità stazione (punto 6). Possono collegarsi al massimo 4 dispositivi insieme. L'indirizzo <code>192.168.1.100</code> in questa modalità non si cambia.
+    </div>
+    <div class="box warn">
+      <b>Cambia la password.</b> <code>88888888</code> è la stessa per tutti gli apparecchi: in un porto affollato chiunque può collegarsi e, con il WiFi bidirezionale, mandare dati sugli strumenti. Si cambia dal programma di configurazione (punto 6), da 8 a 12 caratteri.
+    </div>
+
+    <h2>4. Il pilota automatico che segue la rotta</h2>
+    <p>È la parte che ci avevi chiesto. Il percorso dei dati è questo: SailGrib manda via WiFi la navigazione verso il waypoint attivo (frasi <code>APB</code> e <code>RMB</code>: rotta da tenere, errore laterale, distanza); il multiplexer le converte per la dorsale NMEA 2000 (PGN 129283 e 129284) e le rimanda anche sull'uscita NMEA 0183; il pilota, in modalità navigazione (Track o Nav), le segue.</p>
+    <p>Funziona solo se il pilota riceve i dati da uno di questi due lati:</p>
+    <ul>
+      <li><b>Pilota sulla dorsale NMEA 2000</b> (per esempio Raymarine Evolution, B&amp;G, Simrad, Garmin recenti): va bene così.</li>
+      <li><b>Pilota con ingresso NMEA 0183</b>: va collegato all'uscita <b>OUT</b> del multiplexer, con la velocità impostata uguale a quella del pilota (di solito 4800).</li>
+      <li><b>Pilota solo SeaTalk1</b> (vecchi Raymarine ST4000, ST6000, ST7000): <b>non funziona</b> attraverso il multiplexer, perché su SeaTalk1 il multiplexer ascolta soltanto e non scrive. Servirebbe un convertitore da NMEA a SeaTalk1 (per esempio Raymarine E85001) o il collegamento NMEA 0183 diretto al calcolatore del pilota.</li>
+    </ul>
+    <div class="box tip">
+      <b>Aggiorna il firmware.</b> Il supporto completo alle frasi per i piloti (APB, AAM, HSC) è arrivato con un aggiornamento Quark-elec. La versione installata si legge nel programma di configurazione; l'aggiornamento è al punto 6.
+    </div>
+    <div class="box warn">
+      <b>Prima prova in acqua calma.</b> Attiva la navigazione verso un waypoint vicino, metti il pilota in modalità Track o Nav e tieni la mano sul tasto Standby. Il pilota segue il waypoint, non il vento: su un cambio di bordo o con un salto di vento non cambia mure da solo.
+    </div>
+
+    <h2>5. Dal computer, via USB</h2>
+    <p>Con il cavo USB il multiplexer si vede come una porta seriale: su Mac e Linux senza driver, su Windows di solito si installa da solo (in Gestione dispositivi compare una nuova porta COM). Programmi come OpenCPN la usano direttamente: basta scegliere quella porta.</p>
+
+    <h2>6. Le impostazioni avanzate (serve un PC Windows)</h2>
+    <p>Tutto quello che non è di fabbrica si cambia solo con il programma di configurazione Quark-elec, su Windows, con il multiplexer collegato via USB (non via WiFi) e senza altri programmi che lo stiano usando. Dopo ogni modifica: <i>Config</i>, poi <i>Disconnect</i>, poi spegnere e riaccendere il multiplexer.</p>
+    <ul>
+      <li><b>Nome e password del WiFi.</b></li>
+      <li><b>Modalità stazione:</b> il multiplexer si collega al router di bordo, così il tablet resta su internet mentre vede gli strumenti. Si inseriscono nome e password del router, un indirizzo fisso tipo <code>192.168.1.50</code> e l'indirizzo del router; nell'app poi si usa quel nuovo indirizzo, sempre con porta <code>2000</code>.</li>
+      <li><b>Velocità degli ingressi</b> (4800, 9600 o 38400): ogni ingresso deve avere la stessa velocità dello strumento collegato. Di fabbrica: IN1 e IN2 a 4800, IN3 a 38400 (adatto all'AIS).</li>
+      <li><b>Liste nere:</b> fino a 8 tipi di frase bloccati per ingresso, per togliere dati doppi o inutili. È il rimedio quando lampeggia <i>Overflow</i>, insieme ad alzare la velocità dell'uscita NMEA 0183 se lo strumento collegato la regge.</li>
+      <li><b>Aggiornamento del firmware:</b> scaricato dal sito Quark-elec, con il programma collegato si preme <code>Ctrl+F7</code>, si copia il file nell'unità <i>STM32</i> che compare, si aspettano 10 secondi e si riavvia.</li>
+    </ul>
+
+    <h2>7. Cosa ci serve per dirti di più</h2>
+    <ol>
+      <li>Una foto del multiplexer con i fili collegati, e una con le luci accese a strumenti accesi.</li>
+      <li>Marca e modello del pilota automatico e degli strumenti (vento, profondità, plotter, AIS).</li>
+      <li>Se a bordo c'è una dorsale NMEA 2000 (cavi neri con connettori tondi a T) o solo SeaTalk1.</li>
+      <li>La versione del firmware, se riesci a collegarlo a un PC Windows.</li>
+    </ol>
+    <p>Con queste, ti diciamo esattamente cosa collegare dove.</p>
+
+    <h2>8. Cosa c'entra con Bordea</h2>
+    <p>Nella call avevi descritto il tablet al tavolo da carteggio, il ricalcolo a ogni waypoint con il vento reale e il pilota che segue la rotta. Il multiplexer è il pezzo che lo rende possibile: in futuro Bordea potrebbe leggere vento e velocità reali per correggere la polare della tua barca e ricalcolare la rotta. Oggi non lo fa ancora: un sito web non può collegarsi direttamente al multiplexer, serve un'app installata sul tablet. È nella lista delle cose da fare più avanti.</p>
+
+    <p class="src">Fonti: manuale italiano QK-A034BS e <a href="https://www.quark-elec.com/doc/QK-A034-B_manual.pdf">manuale ufficiale Quark-elec QK-A034-B v1.11</a> (tabelle di conversione); <a href="https://www.quark-elec.com/new-firmware-updated-for-a034-a034-b-to-support-dsc-messages/">nota Quark-elec sul firmware per piloti e VHF</a>.</p>
+  </main>
+</body>
+</html>
