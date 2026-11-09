@@ -140,3 +140,12 @@ footer { color: var(--muted); font-size: 13px; padding: 0 0 40px; }
 .scenario i { color: #9a5a17; font-size: 20px; flex: none; margin-top: 2px; }
 .scenario b { font-weight: 600; }
 @media (max-width: 640px) { .scenario { padding-left: 14px; padding-right: 14px; } }
+
+details.legs summary.explicit { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-weight: 400; }
+details.legs summary.explicit::-webkit-details-marker { display: none; }
+.legs-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--sea); border-radius: 8px; color: var(--sea); font-weight: 600; }
+.legs-btn i { transition: transform .15s; }
+details.legs[open] .legs-btn i { transform: rotate(180deg); }
+details.legs summary.explicit:hover .legs-btn { background: #eef5fb; }
+.legs-hint { font-size: 14px; color: var(--muted); }
+@media (max-width: 640px) { details.legs summary { padding-left: 14px; padding-right: 14px; } }

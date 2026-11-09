@@ -415,7 +415,11 @@ function routeCard(route) {
     tbody.append(row);
   });
   const table = el("table", {}, el("thead", {}, el("tr", {}, T.cols.map((c, i) => el("th", { class: i === 4 || i === 9 ? "l" : "" }, c)))), tbody);
-  const legs = el("details", { class: "legs" }, el("summary", {}, T.legsTitle(now.legs.length)), el("div", { class: "table-wrap" }, table));
+  const summary = T.legsOpen
+    ? el("summary", { class: "explicit" }, el("span", { class: "legs-btn" }, icon("caret-down"), T.legsOpen.replace("{n}", now.legs.length)),
+      T.legsHint ? el("span", { class: "legs-hint" }, T.legsHint) : null)
+    : el("summary", {}, T.legsTitle(now.legs.length));
+  const legs = el("details", { class: "legs" }, summary, el("div", { class: "table-wrap" }, table));
 
   const card = el("section", { class: "route", id: `rotta-${route.n}` },
     head, stats, scenario, el("p", { class: "note" }, route.note), warnings, mapNode, legend, legs,
@@ -466,6 +470,7 @@ function drawMap(node, route, rows) {
     selected = index;
     lines[index].setStyle({ weight: 9 }).bringToFront();
     rows[index].classList.add("on");
+    rows[index].closest("details").open = true;
   }
   rows.forEach((row, index) => row.addEventListener("click", () => {
     highlight(index);
@@ -486,6 +491,8 @@ function render() {
     el("p", { class: "boat" }, T.boat),
     T.changes.length ? el("h3", {}, T.changesTitle) : null,
     T.changes.length ? el("ul", { class: "changes" }, T.changes.map((c) => el("li", {}, c))) : null,
+    T.guide ? el("h3", {}, T.guideTitle) : null,
+    T.guide ? el("ol", { class: "changes" }, T.guide.map((g) => el("li", {}, g))) : null,
     el("div", { class: "howto" }, icon("microphone"), el("p", {}, T.howto)));
   app.replaceChildren(intro, ...data.routes.map(routeCard),
     el("section", { class: "general" }, feedbackBlock(0, T.generalTitle, T.generalHint)),
