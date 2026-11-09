@@ -133,3 +133,10 @@ footer { color: var(--muted); font-size: 13px; padding: 0 0 40px; }
   .map { height: 300px; }
   .route-head, .note, .feedback { padding-left: 14px; padding-right: 14px; }
 }
+
+.badge.synthetic { background: #fbeee0; color: #9a5a17; }
+.scenario { display: flex; gap: 10px; padding: 14px 20px; margin: 0; border-bottom: 1px solid var(--line); background: #fdf7f0; }
+.scenario p { margin: 0; max-width: 85ch; }
+.scenario i { color: #9a5a17; font-size: 20px; flex: none; margin-top: 2px; }
+.scenario b { font-weight: 600; }
+@media (max-width: 640px) { .scenario { padding-left: 14px; padding-right: 14px; } }

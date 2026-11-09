@@ -67,7 +67,11 @@ const TEXT = {
       "The forecast wind exceeds your limit on part of the route.": "Il vento previsto supera il limite su una parte della rotta.",
       "Part of the route is sailed below your minimum sail speed.": "Una parte della rotta è a vela sotto 4,5 kn.",
       "Part of the route cannot be sailed in this wind; it is motored there.": "Una parte della rotta non si può fare a vela con questo vento: lì si va a motore.",
+      "The wind is over your limit whichever way you go: this is the plain route, with no detour that would not keep you out of it.": "Il vento è oltre il limite qualunque strada si prenda: è la rotta normale, senza deviazioni che non servirebbero a evitarlo.",
     },
+    syntheticBadge: "Scenario costruito",
+    scenarioTitle: "Vento costruito da noi, non una previsione:",
+    strait: "Passaggio stretto",
     footer: "Bordea · pagina privata di revisione, non indicizzata.",
   },
   es: {
@@ -364,26 +368,30 @@ function feedbackBlock(n, title, hint) {
 
 function stat(label, now, was) {
   return el("div", { class: "stat" }, el("div", { class: "k" }, label), el("div", { class: "v" }, now),
-    el("div", { class: "was" }, `${T.inCall}: ${was}`));
+    was == null ? null : el("div", { class: "was" }, `${T.inCall}: ${was}`));
 }
 
 function routeCard(route) {
   const now = route.now;
   const call = route.call;
   const head = el("div", { class: "route-head" },
-    el("h2", {}, el("span", { class: "route-n" }, route.n), route.label, el("span", { class: "badge" }, T[route.style])),
+    el("h2", {}, el("span", { class: "route-n" }, route.n), route.label, el("span", { class: "badge" }, T[route.style]),
+      route.scenario ? el("span", { class: "badge synthetic" }, T.syntheticBadge) : null),
     el("div", { class: "route-meta" }, `${T.departure}: ${fmtTime(route.departure, true)}`));
   const stats = el("div", { class: "stats" },
-    stat(T.distance, `${fmtNumber(now.nm)} NM`, `${fmtNumber(call.nm)} NM`),
-    stat(T.duration, fmtHours(now.h), fmtHours(call.h)),
-    stat(T.sailShare, `${Math.round(now.sail * 100)}%`, `${Math.round(call.sail * 100)}%`),
-    stat(T.manoeuvres, `${now.tacks} / ${now.gybes}`, `${call.tacks} / ${call.gybes}`));
+    stat(T.distance, `${fmtNumber(now.nm)} NM`, call && `${fmtNumber(call.nm)} NM`),
+    stat(T.duration, fmtHours(now.h), call && fmtHours(call.h)),
+    stat(T.sailShare, `${Math.round(now.sail * 100)}%`, call && `${Math.round(call.sail * 100)}%`),
+    stat(T.manoeuvres, `${now.tacks} / ${now.gybes}`, call && `${call.tacks} / ${call.gybes}`));
+  const scenario = route.scenario
+    ? el("div", { class: "scenario" }, icon("wind"), el("p", {}, el("b", {}, `${T.scenarioTitle} `), route.scenario))
+    : null;
   const warnings = now.warnings.length
     ? el("div", { class: "warn" }, now.warnings.map((w) => el("span", {}, icon("warning"), T.warnings[w] || w)))
     : null;
   const mapNode = el("div", { class: "map" });
   const legend = el("div", { class: "legend" },
-    ...["sail", "slow", "motor", "limit", "call"].map((key) => el("span", {}, el("i", { class: `sw ${key}` }), T.legend[key])),
+    ...["sail", "slow", "motor", "limit", ...(call ? ["call"] : [])].map((key) => el("span", {}, el("i", { class: `sw ${key}` }), T.legend[key])),
     el("span", {}, icon("arrow-up"), T.legend.arrow));
 
   const rows = [];
@@ -401,7 +409,8 @@ function routeCard(route) {
       el("td", { class: overLimit(leg) ? "bad" : "" }, leg.ws == null ? "–" : fmtNumber(leg.ws, 1)),
       el("td", {}, leg.twa == null || leg.p !== "sail" ? "–" : `${leg.twa}°`),
       el("td", { class: leg.p === "sail" && leg.v < MIN_SAIL_KN ? "bad" : "" }, `${fmtNumber(leg.v, 1)} kn`),
-      el("td", { class: "l" }, [leg.m ? T[leg.m] : null, leg.p === "sail" && leg.twa != null && leg.twa < BEAT_TWA ? T.boards : null].filter(Boolean).join(" · ")));
+      el("td", { class: "l" }, [leg.m ? T[leg.m] : null, leg.p === "sail" && leg.twa != null && leg.twa < BEAT_TWA ? T.boards : null,
+        leg.p !== "sail" && leg.r && leg.r.includes("strait") ? T.strait : null].filter(Boolean).join(" · ")));
     rows.push(row);
     tbody.append(row);
   });
@@ -409,7 +418,7 @@ function routeCard(route) {
   const legs = el("details", { class: "legs" }, el("summary", {}, T.legsTitle(now.legs.length)), el("div", { class: "table-wrap" }, table));
 
   const card = el("section", { class: "route", id: `rotta-${route.n}` },
-    head, stats, el("p", { class: "note" }, route.note), warnings, mapNode, legend, legs,
+    head, stats, scenario, el("p", { class: "note" }, route.note), warnings, mapNode, legend, legs,
     feedbackBlock(route.n, T.commentTitle(route.n)));
 
   requestAnimationFrame(() => drawMap(mapNode, route, rows));
@@ -422,7 +431,7 @@ function drawMap(node, route, rows) {
     maxZoom: 15,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(map);
-  L.polyline(route.call.line, { color: "#8a96a0", weight: 3, dashArray: "6 6", opacity: 0.9 }).addTo(map);
+  if (route.call) L.polyline(route.call.line, { color: "#8a96a0", weight: 3, dashArray: "6 6", opacity: 0.9 }).addTo(map);
   const lines = route.now.legs.map((leg, index) => {
     const line = L.polyline([leg.a, leg.b], { color: CSS_COLORS[legColor(leg)], weight: 5, opacity: 0.95 }).addTo(map);
     line.on("click", () => highlight(index));
@@ -444,7 +453,7 @@ function drawMap(node, route, rows) {
   const last = route.now.legs[route.now.legs.length - 1].b;
   L.circleMarker(first, { radius: 6, color: "#14212b", fillColor: "#fff", fillOpacity: 1, weight: 2 }).addTo(map);
   L.circleMarker(last, { radius: 6, color: "#14212b", fillColor: "#14212b", fillOpacity: 1, weight: 2 }).addTo(map);
-  const bounds = L.latLngBounds([...route.now.legs.flatMap((leg) => [leg.a, leg.b]), ...route.call.line]);
+  const bounds = L.latLngBounds([...route.now.legs.flatMap((leg) => [leg.a, leg.b]), ...(route.call ? route.call.line : [])]);
   map.fitBounds(bounds, { padding: [24, 24] });
 
   let selected = null;
@@ -475,8 +484,8 @@ function render() {
     el("h1", {}, T.heading),
     el("p", {}, T.intro),
     el("p", { class: "boat" }, T.boat),
-    el("h3", {}, T.changesTitle),
-    el("ul", { class: "changes" }, T.changes.map((c) => el("li", {}, c))),
+    T.changes.length ? el("h3", {}, T.changesTitle) : null,
+    T.changes.length ? el("ul", { class: "changes" }, T.changes.map((c) => el("li", {}, c))) : null,
     el("div", { class: "howto" }, icon("microphone"), el("p", {}, T.howto)));
   app.replaceChildren(intro, ...data.routes.map(routeCard),
     el("section", { class: "general" }, feedbackBlock(0, T.generalTitle, T.generalHint)),
@@ -499,7 +508,7 @@ async function main() {
     document.getElementById("app").replaceChildren(el("p", { class: "error" }, T.invalid));
     return;
   }
-  T = TEXT[data.lang] || TEXT.it;
+  T = { ...(TEXT[data.lang] || TEXT.it), ...(data.text || {}) };
   render();
 }
 
